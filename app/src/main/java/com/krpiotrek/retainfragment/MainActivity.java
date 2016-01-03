@@ -17,8 +17,6 @@ import rx.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Observable<GithubResponse> mInfoObservable;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -27,9 +25,9 @@ public class MainActivity extends AppCompatActivity {
         final TextView text = (TextView) findViewById(android.R.id.text1);
         final ProgressBar progress = (ProgressBar) findViewById(android.R.id.progress);
 
-        getOrCreateObservable(savedInstanceState);
+        final Observable<GithubResponse> infoObservable = getOrCreateObservable(savedInstanceState);
 
-        mInfoObservable.subscribe(
+        infoObservable.subscribe(
                 new Action1<GithubResponse>() {
                     @Override
                     public void call(GithubResponse response) {
@@ -45,30 +43,35 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    private void getOrCreateObservable(Bundle savedInstanceState) {
+    private Observable<GithubResponse> getOrCreateObservable(Bundle savedInstanceState) {
+        Observable<GithubResponse> infoObservable;
+
         if (savedInstanceState == null) {
-            // first run, create observable
-            createAndSetInfoObservable();
+            // first run, create and set observable
+            infoObservable = createandSetInfoObservable();
         } else {
             // following runs, get observable from retained fragment
-            mInfoObservable = RetainFragmentHelper.getObjectOrNull(this, getSupportFragmentManager());
-            // fragment may be removed during memory clean up, if so, create observable again
-            if (mInfoObservable == null) createAndSetInfoObservable();
+            infoObservable = RetainFragmentHelper.getObjectOrNull(this, getSupportFragmentManager());
+            // fragment may be removed during memory clean up, if so, create and set observable again
+            if (infoObservable == null) {
+                infoObservable = createandSetInfoObservable();
+            }
         }
-    }
 
-    private void createAndSetInfoObservable() {
-        mInfoObservable = createInfoObservable();
-        RetainFragmentHelper.setObject(this, getSupportFragmentManager(), mInfoObservable);
+        return infoObservable;
     }
 
     @NonNull
-    private Observable<GithubResponse> createInfoObservable() {
-        return App.getAppFromActivity(this)
+    private Observable<GithubResponse> createandSetInfoObservable() {
+        final Observable<GithubResponse> infoObservable = App.getAppFromActivity(this)
                 .getService()
                 .baseInfo()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .cache();
+
+        RetainFragmentHelper.setObject(this, getSupportFragmentManager(), infoObservable);
+        
+        return infoObservable;
     }
 }

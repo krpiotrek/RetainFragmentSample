@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
+    @NonNull
     private Observable<GithubResponse> getOrCreateObservable(Bundle savedInstanceState) {
         Observable<GithubResponse> infoObservable;
 
